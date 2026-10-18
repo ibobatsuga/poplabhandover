@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PopLab - Form Serah Terima Alat DJ</title>
+    <title>PopLab - Serah Terima Alat & Invoice Generator</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Phosphor Icons CDN -->
@@ -28,12 +28,30 @@
     </script>
     <style>
         .pb-safe {
-            padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 70px);
+            padding-bottom: calc(env(safe-area-inset-bottom, 16px) + 76px);
         }
 
         .sig-canvas {
             touch-action: none;
             background-color: #FAFAFD;
+        }
+
+        @media print {
+            body * { visibility: hidden !important; }
+            #printable-invoice, #printable-invoice * { visibility: visible !important; }
+            #printable-invoice {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 24px !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: block !important;
+            }
+            .no-print { display: none !important; }
         }
     </style>
     <!-- PLACEHOLDER: HEAD_TAGS -->
@@ -46,7 +64,7 @@
 
         <!-- Top Header -->
         <header
-            class="flex-none z-40 bg-white/95 backdrop-blur border-b border-popborder px-5 py-3.5 flex items-center justify-between">
+            class="flex-none z-40 bg-white/95 backdrop-blur border-b border-popborder px-5 py-3.5 flex items-center justify-between no-print">
             <div class="flex items-center gap-2.5">
                 <div
                     class="w-8 h-8 rounded-full bg-popblue text-white flex items-center justify-center font-bold text-xs tracking-wider">
@@ -54,8 +72,7 @@
                 </div>
                 <div>
                     <h1 class="text-base font-extrabold tracking-tight leading-none text-popdark">PopLab</h1>
-                    <p class="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase mt-0.5">Handover
-                        System</p>
+                    <p id="header-subtitle" class="text-[11px] font-semibold tracking-wider text-neutral-400 uppercase mt-0.5">Handover & Billing</p>
                 </div>
             </div>
             <div id="header-user-badge" class="hidden items-center gap-2">
@@ -338,6 +355,168 @@
                 </div>
             </section>
 
+            <!-- VIEW: INVOICE GENERATOR -->
+            <section id="view-invoice" class="p-5 hidden">
+                <div class="mb-4">
+                    <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-popblue text-xs font-bold tracking-wide uppercase mb-2">
+                        Billing & Tagihan
+                    </div>
+                    <h2 class="text-xl font-black text-popdark tracking-tight">Invoice Generator</h2>
+                    <p class="text-xs text-neutral-500 mt-0.5">Pilih layanan resmi PopLab atau tambahkan item kustom untuk penagihan.</p>
+                </div>
+
+                <!-- Sub-tab Toggles: Buat Invoice vs Riwayat -->
+                <div class="flex p-1 bg-popsoft rounded-2xl mb-4 border border-popborder">
+                    <button type="button" onclick="switchInvoiceSubTab('create')" id="inv-tab-btn-create"
+                        class="flex-1 py-2 text-xs font-bold rounded-xl bg-popblue text-white shadow-sm transition flex items-center justify-center gap-1.5">
+                        <i class="ph ph-receipt text-sm"></i>
+                        <span>Buat Invoice</span>
+                    </button>
+                    <button type="button" onclick="switchInvoiceSubTab('history')" id="inv-tab-btn-history"
+                        class="flex-1 py-2 text-xs font-bold rounded-xl text-neutral-500 hover:text-neutral-700 transition flex items-center justify-center gap-1.5">
+                        <i class="ph ph-clock-counter-clockwise text-sm"></i>
+                        <span>Riwayat Tagihan</span>
+                        <span id="invoice-count-badge" class="px-1.5 py-0.5 rounded-full bg-neutral-200 text-neutral-700 text-[10px] font-bold">0</span>
+                    </button>
+                </div>
+
+                <!-- SUBVIEW: BUAT INVOICE -->
+                <div id="subview-invoice-create">
+                    <form id="invoice-form" onsubmit="handleInvoiceSubmit(event)" class="space-y-4">
+                        
+                        <!-- Card 01: Identitas Klien -->
+                        <div class="p-4 rounded-2xl border border-popborder bg-white shadow-sm space-y-3">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">01 / Data Klien & Acara</span>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-neutral-600 mb-1">Nama Klien / EO / Instansi *</label>
+                                    <input type="text" id="client-name" required placeholder="Contoh: Rian Pratama (EO Fest)"
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-bold text-neutral-600 mb-1">No. WhatsApp *</label>
+                                        <input type="tel" id="client-phone" required placeholder="08xxxxxxxxxx"
+                                            class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-neutral-600 mb-1">Status Tagihan</label>
+                                        <select id="invoice-status" class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                            <option value="Belum Lunas">Belum Lunas</option>
+                                            <option value="DP 50%">DP 50% Diterima</option>
+                                            <option value="Lunas">Lunas</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="block text-xs font-bold text-neutral-600 mb-1">Tanggal Tagihan</label>
+                                        <input type="date" id="invoice-date" class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold text-neutral-600 mb-1">Jatuh Tempo (H-1)</label>
+                                        <input type="date" id="invoice-due" class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-neutral-600 mb-1">Nama Acara & Venue</label>
+                                    <input type="text" id="event-notes" placeholder="Contoh: Sunset Session @ Hyatt Regency Jogja"
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card 02: Quick Pick Rate Card PopLab -->
+                        <div class="p-4 rounded-2xl border border-popborder bg-white shadow-sm space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">02 / Katalog Resmi PopLab</span>
+                                <span class="text-[11px] text-neutral-400">Klik untuk menambahkan</span>
+                            </div>
+                            <div id="catalog-chips-container" class="grid grid-cols-2 gap-2">
+                                <!-- Rendered via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Card 03: Rincian Item Tagihan -->
+                        <div class="p-4 rounded-2xl border border-popborder bg-white shadow-sm space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">03 / Daftar Item Tagihan</span>
+                                <button type="button" onclick="addNewBlankItem()" class="text-xs font-bold text-popblue hover:underline flex items-center gap-1">
+                                    <i class="ph ph-plus-circle"></i> Item Manual
+                                </button>
+                            </div>
+                            <div id="items-table-container" class="space-y-2">
+                                <!-- Rendered via JS -->
+                            </div>
+                        </div>
+
+                        <!-- Card 04: Penyesuaian & Kalkulasi Biaya -->
+                        <div class="p-4 rounded-2xl border border-popborder bg-white shadow-sm space-y-3">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">04 / Penyesuaian Biaya</span>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-xs font-bold text-neutral-600 mb-1">Transport / Biaya Kru (Rp)</label>
+                                    <input type="number" id="fee-transport" value="0" min="0" oninput="calculateTotal()"
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-neutral-600 mb-1">Potongan / Diskon (Rp)</label>
+                                    <input type="number" id="fee-discount" value="0" min="0" oninput="calculateTotal()"
+                                        class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-popborder space-y-1.5 text-xs">
+                                <div class="flex justify-between text-neutral-500 font-medium">
+                                    <span>Subtotal Item:</span>
+                                    <span id="label-subtotal">Rp0</span>
+                                </div>
+                                <div class="flex justify-between text-neutral-500 font-medium">
+                                    <span>Transport & Ekstra:</span>
+                                    <span id="label-transport">Rp0</span>
+                                </div>
+                                <div class="flex justify-between text-emerald-600 font-medium">
+                                    <span>Diskon:</span>
+                                    <span id="label-discount">- Rp0</span>
+                                </div>
+                                <div class="flex justify-between text-sm font-black text-popdark pt-2 border-t border-popborder">
+                                    <span>Total Tagihan:</span>
+                                    <span id="label-grandtotal" class="text-popblue text-base">Rp0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" 
+                            class="w-full py-4 bg-popblue text-white rounded-full font-bold text-sm shadow-xl shadow-blue-500/30 active:scale-95 transition flex items-center justify-center gap-2">
+                            <i class="ph ph-file-text text-lg"></i>
+                            <span>Simpan & Buka Lembar PDF</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- SUBVIEW: RIWAYAT INVOICE -->
+                <div id="subview-invoice-history" class="hidden">
+                    <!-- Search Bar & Filters -->
+                    <div class="space-y-2 mb-4">
+                        <div class="relative">
+                            <i class="ph ph-magnifying-glass absolute left-3.5 top-3 text-neutral-400"></i>
+                            <input type="text" oninput="handleInvoiceSearch(this.value)" placeholder="Cari nama klien / nomor invoice..."
+                                class="w-full pl-9 pr-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-xs font-medium focus:outline-none focus:bg-white focus:ring-2 focus:ring-popblue">
+                        </div>
+                        <div class="flex gap-1.5">
+                            <button type="button" onclick="filterInvoices('ALL', event)" class="inv-filter-btn flex-1 py-1.5 text-xs font-bold rounded-lg bg-popblue text-white">Semua</button>
+                            <button type="button" onclick="filterInvoices('Belum Lunas', event)" class="inv-filter-btn flex-1 py-1.5 text-xs font-bold rounded-lg bg-popsoft text-neutral-600">Pending</button>
+                            <button type="button" onclick="filterInvoices('Lunas', event)" class="inv-filter-btn flex-1 py-1.5 text-xs font-bold rounded-lg bg-popsoft text-neutral-600">Lunas</button>
+                        </div>
+                    </div>
+
+                    <!-- Container List -->
+                    <div id="invoices-list-container" class="space-y-3">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </section>
+
             <!-- VIEW: COMING SOON ROADMAP -->
             <section id="view-roadmap" class="p-5 hidden">
                 <div class="mb-4">
@@ -346,7 +525,7 @@
                         Roadmap Fitur
                     </div>
                     <h2 class="text-xl font-black text-popdark tracking-tight">Fitur Masa Depan (V2 & V3)</h2>
-                    <p class="text-xs text-neutral-500 mt-0.5">Evolusi otomasi operasional PopLab berikutnya.</p>
+                    <p class="text-xs text-neutral-500 mt-0.5">Evolusi otomasi operasional & keuangan PopLab berikutnya.</p>
                 </div>
 
                 <div id="roadmap-cards-container" class="space-y-3">
@@ -356,7 +535,7 @@
 
             <!-- VIEW: DETAIL MODAL -->
             <div id="detail-modal"
-                class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+                class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4 no-print">
                 <div
                     class="bg-white w-full max-w-lg max-h-[90dvh] rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl">
                     <div class="px-5 py-4 border-b border-popborder flex items-center justify-between">
@@ -383,24 +562,147 @@
                 </div>
             </div>
 
+            <!-- VIEW: MODAL PREVIEW & CETAK PDF INVOICE -->
+            <div id="pdf-modal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+                <div class="bg-white w-full max-w-xl max-h-[92dvh] rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col shadow-2xl">
+                    <div class="px-5 py-4 border-b border-popborder flex items-center justify-between no-print">
+                        <h3 class="text-sm font-extrabold text-popdark uppercase tracking-wider">Lembar Invoice Resmi</h3>
+                        <button onclick="closePdfModal()" class="p-1 rounded-full bg-popsoft hover:bg-neutral-200">
+                            <i class="ph ph-x text-base"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Dokumen yang Dicetak Menjadi PDF -->
+                    <div id="printable-invoice" class="p-6 overflow-y-auto space-y-4 text-xs bg-white text-popdark">
+                        <!-- Header Invoice PopLab -->
+                        <div class="flex items-start justify-between border-b border-popborder pb-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <div class="w-7 h-7 rounded-full bg-popblue text-white flex items-center justify-center font-black text-xs">PL</div>
+                                    <h2 class="text-lg font-black tracking-tight text-popdark">PopLab</h2>
+                                </div>
+                                <p class="text-[10px] font-bold text-neutral-400 tracking-wider uppercase">DJ School & Equipment Rental</p>
+                                <p class="text-[10px] text-neutral-500 mt-1 leading-snug">
+                                    Jl. Kaliurang Timur, Nglaban, Sinduharjo, Sleman, DIY 55581<br>
+                                    WhatsApp: 0899-7450-110 | IG: @poplab97
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span id="doc-badge-status" class="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
+                                    Belum Lunas
+                                </span>
+                                <p id="doc-inv-number" class="text-xs font-black text-popblue mt-2 tracking-wide font-mono">INV-PL-202610-001</p>
+                                <p id="doc-inv-date" class="text-[10px] text-neutral-400">Tanggal: 18 Okt 2026</p>
+                                <p id="doc-inv-due" class="text-[10px] text-neutral-400 font-bold">Jatuh Tempo: 19 Okt 2026</p>
+                            </div>
+                        </div>
+
+                        <!-- Identitas Penerima Tagihan -->
+                        <div class="bg-popsoft p-3 rounded-xl border border-popborder flex justify-between items-start">
+                            <div>
+                                <span class="text-[9px] font-extrabold uppercase tracking-wider text-popblue">Ditujukan Kepada</span>
+                                <h4 id="doc-client-name" class="text-sm font-extrabold text-popdark">Rian Pratama (EO Fest)</h4>
+                                <p id="doc-client-phone" class="text-[11px] text-neutral-500">081234567890</p>
+                            </div>
+                            <div class="text-right max-w-[200px]">
+                                <span class="text-[9px] font-extrabold uppercase tracking-wider text-neutral-400">Acara & Venue</span>
+                                <p id="doc-event-notes" class="text-[11px] font-bold text-neutral-700 leading-snug">Hyatt Regency Jogja</p>
+                            </div>
+                        </div>
+
+                        <!-- Tabel Rincian Biaya -->
+                        <div>
+                            <table class="w-full text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b border-popdark/10 text-[10px] uppercase font-bold text-neutral-400">
+                                        <th class="py-1.5">Deskripsi Layanan / Alat</th>
+                                        <th class="py-1.5 text-center">Qty</th>
+                                        <th class="py-1.5 text-right">Harga</th>
+                                        <th class="py-1.5 text-right">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="doc-table-body" class="text-[11px]">
+                                    <!-- Rendered via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Totalan -->
+                        <div class="border-t border-popborder pt-2.5 space-y-1 text-[11px]">
+                            <div class="flex justify-between text-neutral-500">
+                                <span>Subtotal Item:</span>
+                                <span id="doc-subtotal" class="font-bold">Rp0</span>
+                            </div>
+                            <div class="flex justify-between text-neutral-500">
+                                <span>Transportasi & Kru Tambahan:</span>
+                                <span id="doc-transport" class="font-bold">Rp0</span>
+                            </div>
+                            <div class="flex justify-between text-emerald-600">
+                                <span>Potongan / Diskon:</span>
+                                <span id="doc-discount" class="font-bold">- Rp0</span>
+                            </div>
+                            <div class="flex justify-between text-sm font-black text-popdark border-t border-popborder pt-2 mt-1">
+                                <span>Total Pembayaran:</span>
+                                <span id="doc-grandtotal" class="text-popblue font-black text-base">Rp0</span>
+                            </div>
+                        </div>
+
+                        <!-- Petunjuk Rekening & Syarat Pembayaran -->
+                        <div class="p-3 bg-blue-50/70 rounded-xl border border-blue-100 text-[10px] space-y-1">
+                            <p class="font-black text-popblue uppercase tracking-wider">Informasi Pembayaran & Rekening Resmi:</p>
+                            <p class="text-neutral-700 font-semibold">Bank BCA: <span class="font-mono text-popdark font-bold">861-098-7654</span> a/n PopLab Creative</p>
+                            <p class="text-neutral-500 leading-tight">
+                                • Uang muka (DP 50%) diperlukan untuk mengunci jadwal sewa / kelas.<br>
+                                • Pelunasan paling lambat H-1 sebelum pelaksanaan atau pengambilan alat.<br>
+                                • Konfirmasi bukti transfer via WhatsApp ke nomor <strong>0899-7450-110</strong>.
+                            </p>
+                        </div>
+
+                        <div class="text-center pt-2 border-t border-popborder text-[10px] font-bold text-neutral-400 uppercase tracking-widest">
+                            PopLab • Play Learn Create Together
+                        </div>
+                    </div>
+
+                    <!-- Action Footer Modal -->
+                    <div class="p-4 border-t border-popborder bg-popsoft flex gap-2 no-print">
+                        <button onclick="window.print()" class="flex-1 py-3 rounded-full bg-popblue text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition">
+                            <i class="ph ph-printer text-base"></i>
+                            <span>Cetak / Simpan PDF</span>
+                        </button>
+                        <button onclick="shareInvoiceWa()" class="flex-1 py-3 rounded-full bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition">
+                            <i class="ph ph-whatsapp-logo text-base"></i>
+                            <span>Kirim Tagihan ke WA</span>
+                        </button>
+                        <button onclick="closePdfModal()" class="px-4 py-3 rounded-full bg-white border border-popborder font-bold text-xs text-neutral-600">
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <!-- PLACEHOLDER: MAIN_CONTAINER -->
         </div>
 
         <!-- Bottom Navigation Bar -->
         <nav id="bottom-navbar"
-            class="mt-auto flex-none z-40 bg-white border-t border-popborder px-4 py-2 flex items-center justify-around hidden">
+            class="mt-auto flex-none z-40 bg-white border-t border-popborder px-3 py-2 flex items-center justify-around hidden no-print">
             <button onclick="switchTab('form')" id="nav-btn-form"
-                class="nav-item flex flex-col items-center gap-1 py-1 px-3 text-popblue transition">
+                class="nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-popblue transition">
                 <i class="ph-bold ph-note-pencil text-xl"></i>
-                <span class="text-[10px] font-bold">Input Form</span>
+                <span class="text-[10px] font-bold">Serah Terima</span>
             </button>
             <button onclick="switchTab('records')" id="nav-btn-records"
-                class="nav-item flex flex-col items-center gap-1 py-1 px-3 text-neutral-400 transition">
+                class="nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-neutral-400 transition">
                 <i class="ph-bold ph-clock-counter-clockwise text-xl"></i>
-                <span class="text-[10px] font-bold">Riwayat</span>
+                <span class="text-[10px] font-bold">Riwayat BAST</span>
+            </button>
+            <button onclick="switchTab('invoice')" id="nav-btn-invoice"
+                class="nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-neutral-400 transition">
+                <i class="ph-bold ph-receipt text-xl"></i>
+                <span class="text-[10px] font-bold">Invoice</span>
             </button>
             <button onclick="switchTab('roadmap')" id="nav-btn-roadmap"
-                class="nav-item flex flex-col items-center gap-1 py-1 px-3 text-neutral-400 transition">
+                class="nav-item flex flex-col items-center gap-1 py-1 px-2.5 text-neutral-400 transition">
                 <i class="ph-bold ph-rocket-launch text-xl"></i>
                 <span class="text-[10px] font-bold">Roadmap</span>
             </button>
@@ -506,11 +808,76 @@
             }
         ];
 
+        let invoicesData = [];
+        let currentItems = [];
+        let activeInvoiceForDoc = null;
+
+        // Rate Card Resmi PopLab (Katalog Cepat)
+        const POPLAB_CATALOG = [
+            { name: "Pioneer RX3 (24 Jam)", category: "Rental", price: 1000000 },
+            { name: "Pioneer RX1 (24 Jam)", category: "Rental", price: 750000 },
+            { name: "Event Compact (6 Jam + Sound)", category: "Paket Acara", price: 2500000 },
+            { name: "DJ School Trial (90 Mnt)", category: "School", price: 350000 },
+            { name: "DJ School Basic (8 Sesi)", category: "School", price: 3500000 },
+            { name: "DJ School Complete (12 Sesi)", category: "School", price: 5000000 },
+            { name: "Private Group Workshop", category: "Experience", price: 3000000 },
+            { name: "Brand / Venue Activation", category: "Experience", price: 6000000 }
+        ];
+
+        // Dummy Invoices Data
+        const DUMMY_INVOICES = [
+            {
+                id: "INV-PL-202610-001",
+                date: "2026-10-18",
+                dueDate: "2026-10-19",
+                status: "DP 50%",
+                officer: "admin",
+                clientName: "Dion Santoso (Wedding EO)",
+                clientPhone: "081234567890",
+                eventNotes: "Wedding Session @ Hyatt Regency Jogja",
+                items: [
+                    { name: "Pioneer RX3 (24 Jam)", qty: 1, price: 1000000, total: 1000000 },
+                    { name: "Speaker Monitor Tambahan", qty: 2, price: 250000, total: 500000 }
+                ],
+                subtotal: 1500000,
+                transport: 150000,
+                discount: 0,
+                grandTotal: 1650000
+            },
+            {
+                id: "INV-PL-202610-002",
+                date: "2026-10-17",
+                dueDate: "2026-10-20",
+                status: "Lunas",
+                officer: "admin",
+                clientName: "Kopi Nuri (Pop-up Class)",
+                clientPhone: "089876543210",
+                eventNotes: "DJ Workshop Basic Class",
+                items: [
+                    { name: "Private Group Workshop", qty: 1, price: 3000000, total: 3000000 }
+                ],
+                subtotal: 3000000,
+                transport: 0,
+                discount: 250000,
+                grandTotal: 2750000
+            }
+        ];
+
         const ROADMAP_ITEMS = [
+            {
+                version: "V2.0",
+                title: "Integrasi Pembayaran QRIS Otomatis",
+                desc: "Tempel barcode QRIS dinamis langsung di lembar invoice agar klien bisa langsung scan dan bayar seketika."
+            },
             {
                 version: "V2.0",
                 title: "Cetak BAST Digital (PDF Otomatis)",
                 desc: "Generate format surat serah terima resmi PopLab berlogo siap cetak atau share via WhatsApp dalam hitungan detik."
+            },
+            {
+                version: "V2.5",
+                title: "Bot Pengingat Tagihan WhatsApp H-1",
+                desc: "Kirim pesan otomatis pengingat jatuh tempo pelunasan sewa secara terjadwal tanpa repot follow up manual."
             },
             {
                 version: "V2.5",
@@ -519,7 +886,12 @@
             },
             {
                 version: "V3.0",
-                title: "WhatsApp API Reminder",
+                title: "Sinkronisasi Pembukuan & Laba Rugi",
+                desc: "Rekap pendapatan rental, paket acara, dan DJ School langsung terakumulasi ke dalam dashboard laporan laba rugi."
+            },
+            {
+                version: "V3.0",
+                title: "WhatsApp API Reminder Sewa",
                 desc: "Pengingat otomatis H-3 jam sebelum masa sewa 24 jam berakhir langsung ke nomor klien."
             }
         ];
@@ -531,11 +903,32 @@
             renderFormComponents();
             renderRoadmap();
             initCanvases();
+            renderCatalogChips();
+            setDefaultInvoiceDates();
 
+            // Default item pertama untuk invoice jika belum ada
+            if (currentItems.length === 0) {
+                addItemToInvoice("Pioneer RX3 (24 Jam)", 1000000);
+            }
+
+            // Muat Data Handover
             if (PREVIEW_MODE) {
                 recordsData = [...DUMMY_RECORDS];
             }
             renderRecordsList(recordsData);
+
+            // Muat Data Invoices
+            const savedInv = localStorage.getItem('poplab_invoices');
+            if (savedInv) {
+                try {
+                    invoicesData = JSON.parse(savedInv);
+                } catch(e) {
+                    invoicesData = [...DUMMY_INVOICES];
+                }
+            } else {
+                invoicesData = [...DUMMY_INVOICES];
+            }
+            renderInvoicesList(invoicesData);
         });
 
         /* ==========================================================
@@ -724,6 +1117,7 @@
             document.getElementById('bottom-navbar').classList.add('hidden');
             document.getElementById('view-form').classList.add('hidden');
             document.getElementById('view-records').classList.add('hidden');
+            document.getElementById('view-invoice').classList.add('hidden');
             document.getElementById('view-roadmap').classList.add('hidden');
             document.getElementById('view-login').classList.remove('hidden');
             showToast('Sesi telah diakhiri.');
@@ -733,21 +1127,35 @@
            TAB SWITCHING
            ========================================================== */
         function switchTab(tabName) {
-            ['form', 'records', 'roadmap'].forEach(name => {
+            ['form', 'records', 'invoice', 'roadmap'].forEach(name => {
                 const viewEl = document.getElementById(`view-${name}`);
                 const navBtn = document.getElementById(`nav-btn-${name}`);
-                if (name === tabName) {
-                    viewEl.classList.remove('hidden');
-                    navBtn.classList.add('text-popblue');
-                    navBtn.classList.remove('text-neutral-400');
-                } else {
-                    viewEl.classList.add('hidden');
-                    navBtn.classList.remove('text-popblue');
-                    navBtn.classList.add('text-neutral-400');
+                if (viewEl && navBtn) {
+                    if (name === tabName) {
+                        viewEl.classList.remove('hidden');
+                        navBtn.classList.add('text-popblue');
+                        navBtn.classList.remove('text-neutral-400');
+                    } else {
+                        viewEl.classList.add('hidden');
+                        navBtn.classList.remove('text-popblue');
+                        navBtn.classList.add('text-neutral-400');
+                    }
                 }
             });
+
+            // Update Header Subtitle
+            const subTitle = document.getElementById('header-subtitle');
+            if (subTitle) {
+                if (tabName === 'invoice') subTitle.innerText = "Invoice Generator";
+                else if (tabName === 'roadmap') subTitle.innerText = "Feature Roadmap";
+                else subTitle.innerText = "Handover System";
+            }
+
             if (tabName === 'records' && !PREVIEW_MODE) {
                 fetchRecordsFromGAS();
+            }
+            if (tabName === 'invoice' && !PREVIEW_MODE) {
+                fetchInvoicesFromGAS();
             }
         }
 
@@ -1079,6 +1487,342 @@
             setTimeout(() => {
                 toast.classList.add('opacity-0', 'pointer-events-none');
             }, 3000);
+        }
+
+        /* ==========================================================
+           INVOICE GENERATOR FUNCTIONS & LOGIC
+           ========================================================== */
+        function switchInvoiceSubTab(subTab) {
+            const createEl = document.getElementById('subview-invoice-create');
+            const historyEl = document.getElementById('subview-invoice-history');
+            const btnCreate = document.getElementById('inv-tab-btn-create');
+            const btnHistory = document.getElementById('inv-tab-btn-history');
+
+            if (subTab === 'create') {
+                createEl.classList.remove('hidden');
+                historyEl.classList.add('hidden');
+                btnCreate.className = "flex-1 py-2 text-xs font-bold rounded-xl bg-popblue text-white shadow-sm transition flex items-center justify-center gap-1.5";
+                btnHistory.className = "flex-1 py-2 text-xs font-bold rounded-xl text-neutral-500 hover:text-neutral-700 transition flex items-center justify-center gap-1.5";
+            } else {
+                createEl.classList.add('hidden');
+                historyEl.classList.remove('hidden');
+                btnCreate.className = "flex-1 py-2 text-xs font-bold rounded-xl text-neutral-500 hover:text-neutral-700 transition flex items-center justify-center gap-1.5";
+                btnHistory.className = "flex-1 py-2 text-xs font-bold rounded-xl bg-popblue text-white shadow-sm transition flex items-center justify-center gap-1.5";
+            }
+        }
+
+        function setDefaultInvoiceDates() {
+            const today = new Date().toISOString().split('T')[0];
+            const tomorrow = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+            const dateEl = document.getElementById('invoice-date');
+            const dueEl = document.getElementById('invoice-due');
+            if (dateEl) dateEl.value = today;
+            if (dueEl) dueEl.value = tomorrow;
+        }
+
+        function renderCatalogChips() {
+            const container = document.getElementById('catalog-chips-container');
+            if (!container) return;
+            container.innerHTML = POPLAB_CATALOG.map(item => `
+                <button type="button" onclick="addItemToInvoice('${item.name}', ${item.price})"
+                    class="p-2.5 rounded-xl border border-popborder bg-popsoft hover:bg-blue-50 hover:border-popblue text-left transition flex flex-col justify-between active:scale-95">
+                    <span class="text-xs font-bold text-popdark leading-tight line-clamp-1">${item.name}</span>
+                    <span class="text-[11px] font-black text-popblue mt-1">Rp${item.price.toLocaleString('id-ID')}</span>
+                </button>
+            `).join('');
+        }
+
+        function renderItemsTable() {
+            const container = document.getElementById('items-table-container');
+            if (!container) return;
+            if (currentItems.length === 0) {
+                container.innerHTML = `
+                    <div class="p-3 text-center text-xs text-neutral-400 bg-popsoft rounded-xl border border-dashed border-popborder">
+                        Belum ada item dipilih. Klik katalog di atas atau tambah item manual.
+                    </div>`;
+                calculateTotal();
+                return;
+            }
+
+            container.innerHTML = currentItems.map((item, idx) => `
+                <div class="p-2.5 rounded-xl border border-popborder bg-popsoft flex items-center gap-2">
+                    <div class="flex-1">
+                        <input type="text" value="${item.name}" onchange="updateItemName(${idx}, this.value)"
+                            placeholder="Deskripsi Item" class="w-full text-xs font-bold bg-transparent border-b border-transparent focus:border-popblue focus:outline-none">
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="text-[10px] text-neutral-400">Harga:</span>
+                            <input type="number" value="${item.price}" oninput="updateItemPrice(${idx}, this.value)"
+                                class="w-24 text-[11px] font-semibold bg-white px-1.5 py-0.5 rounded border border-popborder">
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 flex-none">
+                        <span class="text-[10px] text-neutral-400">Qty</span>
+                        <input type="number" min="1" value="${item.qty}" oninput="updateItemQty(${idx}, this.value)"
+                            class="w-12 text-center text-xs font-bold bg-white px-1 py-1 rounded border border-popborder">
+                    </div>
+                    <button type="button" onclick="removeItem(${idx})" class="p-1.5 text-neutral-400 hover:text-red-500 rounded-lg">
+                        <i class="ph ph-trash text-base"></i>
+                    </button>
+                </div>
+            `).join('');
+
+            calculateTotal();
+        }
+
+        function renderInvoicesList(list) {
+            const container = document.getElementById('invoices-list-container');
+            const countBadge = document.getElementById('invoice-count-badge');
+            if (countBadge) countBadge.innerText = (list || []).length;
+
+            if (!container) return;
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div class="p-8 text-center text-neutral-400 bg-white rounded-2xl border border-popborder">
+                        <i class="ph ph-receipt text-3xl mb-2"></i>
+                        <p class="text-xs font-bold">Belum ada invoice diterbitkan</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = list.map(inv => {
+                let badgeColor = "bg-amber-50 text-amber-600 border border-amber-200";
+                if (inv.status === 'Lunas') badgeColor = "bg-emerald-50 text-emerald-600 border border-emerald-200";
+                if (inv.status === 'Belum Lunas') badgeColor = "bg-red-50 text-red-600 border border-red-200";
+
+                return `
+                    <div onclick="openPdfModal('${inv.id}')" class="p-4 rounded-2xl border border-popborder bg-white hover:border-blue-300 transition cursor-pointer shadow-sm active:scale-[0.99]">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full ${badgeColor}">
+                                ${inv.status}
+                            </span>
+                            <span class="text-[11px] font-medium text-neutral-400">${inv.date}</span>
+                        </div>
+                        <h4 class="text-sm font-extrabold text-popdark">${inv.clientName}</h4>
+                        <div class="flex items-center justify-between mt-2 text-xs">
+                            <span class="font-bold text-popblue font-mono">${inv.id}</span>
+                            <span class="font-extrabold text-popdark">Rp${inv.grandTotal.toLocaleString('id-ID')}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function addItemToInvoice(name, price) {
+            const existing = currentItems.find(i => i.name === name);
+            if (existing) {
+                existing.qty += 1;
+                existing.total = existing.qty * existing.price;
+            } else {
+                currentItems.push({ name, price, qty: 1, total: price });
+            }
+            renderItemsTable();
+            showToast('Item ditambahkan');
+        }
+
+        function addNewBlankItem() {
+            currentItems.push({ name: "Layanan Tambahan", price: 0, qty: 1, total: 0 });
+            renderItemsTable();
+        }
+
+        function updateItemName(idx, val) {
+            currentItems[idx].name = val;
+        }
+
+        function updateItemPrice(idx, val) {
+            const p = parseFloat(val) || 0;
+            currentItems[idx].price = p;
+            currentItems[idx].total = currentItems[idx].qty * p;
+            calculateTotal();
+        }
+
+        function updateItemQty(idx, val) {
+            const q = parseInt(val) || 1;
+            currentItems[idx].qty = q;
+            currentItems[idx].total = q * currentItems[idx].price;
+            calculateTotal();
+        }
+
+        function removeItem(idx) {
+            currentItems.splice(idx, 1);
+            renderItemsTable();
+        }
+
+        function calculateTotal() {
+            const subtotal = currentItems.reduce((acc, curr) => acc + (curr.total || 0), 0);
+            const transportInput = document.getElementById('fee-transport');
+            const discountInput = document.getElementById('fee-discount');
+            const transport = transportInput ? (parseFloat(transportInput.value) || 0) : 0;
+            const discount = discountInput ? (parseFloat(discountInput.value) || 0) : 0;
+            const grandTotal = Math.max(0, subtotal + transport - discount);
+
+            const elSub = document.getElementById('label-subtotal');
+            const elTrans = document.getElementById('label-transport');
+            const elDisc = document.getElementById('label-discount');
+            const elGrand = document.getElementById('label-grandtotal');
+
+            if (elSub) elSub.innerText = 'Rp' + subtotal.toLocaleString('id-ID');
+            if (elTrans) elTrans.innerText = 'Rp' + transport.toLocaleString('id-ID');
+            if (elDisc) elDisc.innerText = '- Rp' + discount.toLocaleString('id-ID');
+            if (elGrand) elGrand.innerText = 'Rp' + grandTotal.toLocaleString('id-ID');
+
+            return { subtotal, transport, discount, grandTotal };
+        }
+
+        function handleInvoiceSubmit(e) {
+            e.preventDefault();
+
+            if (currentItems.length === 0) {
+                showToast('⚠️ Silakan tambahkan minimal 1 item tagihan!');
+                return;
+            }
+
+            const clientName = document.getElementById('client-name').value.trim();
+            const clientPhone = document.getElementById('client-phone').value.trim();
+            const status = document.getElementById('invoice-status').value;
+            const date = document.getElementById('invoice-date').value;
+            const dueDate = document.getElementById('invoice-due').value;
+            const eventNotes = document.getElementById('event-notes').value.trim();
+            const calc = calculateTotal();
+
+            const newInvoice = {
+                id: "INV-PL-" + Date.now().toString().slice(-6),
+                date: date || new Date().toISOString().split('T')[0],
+                dueDate: dueDate || "-",
+                status,
+                officer: currentUser || "admin",
+                clientName,
+                clientPhone,
+                eventNotes: eventNotes || "-",
+                items: [...currentItems],
+                subtotal: calc.subtotal,
+                transport: calc.transport,
+                discount: calc.discount,
+                grandTotal: calc.grandTotal
+            };
+
+            // Optimistic Local Save & LocalStorage Sync
+            invoicesData.unshift(newInvoice);
+            localStorage.setItem('poplab_invoices', JSON.stringify(invoicesData));
+            renderInvoicesList(invoicesData);
+            showToast('✅ Invoice berhasil dibuat & disimpan!');
+
+            // Langsung buka modal dokumen PDF
+            openPdfModal(newInvoice.id);
+
+            // Background Sync ke GAS
+            if (!PREVIEW_MODE) {
+                fetch(APP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: new URLSearchParams({
+                        action: 'saveInvoice',
+                        payload: JSON.stringify(newInvoice)
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.status !== 'success') {
+                        showToast('⚠️ Gagal sync ke server Google Sheets');
+                    }
+                })
+                .catch(() => console.log('Background invoice sync error (GAS action may not be registered yet)'));
+            }
+        }
+
+        function openPdfModal(id) {
+            const inv = invoicesData.find(i => i.id === id);
+            if (!inv) return;
+            activeInvoiceForDoc = inv;
+
+            document.getElementById('doc-badge-status').innerText = inv.status;
+            document.getElementById('doc-inv-number').innerText = inv.id;
+            document.getElementById('doc-inv-date').innerText = 'Tanggal: ' + inv.date;
+            document.getElementById('doc-inv-due').innerText = 'Jatuh Tempo: ' + inv.dueDate;
+            document.getElementById('doc-client-name').innerText = inv.clientName;
+            document.getElementById('doc-client-phone').innerText = inv.clientPhone;
+            document.getElementById('doc-event-notes').innerText = inv.eventNotes || '-';
+
+            const tbody = document.getElementById('doc-table-body');
+            tbody.innerHTML = inv.items.map(it => `
+                <tr class="border-b border-popborder/50">
+                    <td class="py-2 font-bold">${it.name}</td>
+                    <td class="py-2 text-center font-medium">${it.qty}</td>
+                    <td class="py-2 text-right">Rp${it.price.toLocaleString('id-ID')}</td>
+                    <td class="py-2 text-right font-bold text-popdark">Rp${it.total.toLocaleString('id-ID')}</td>
+                </tr>
+            `).join('');
+
+            document.getElementById('doc-subtotal').innerText = 'Rp' + inv.subtotal.toLocaleString('id-ID');
+            document.getElementById('doc-transport').innerText = 'Rp' + inv.transport.toLocaleString('id-ID');
+            document.getElementById('doc-discount').innerText = '- Rp' + inv.discount.toLocaleString('id-ID');
+            document.getElementById('doc-grandtotal').innerText = 'Rp' + inv.grandTotal.toLocaleString('id-ID');
+
+            document.getElementById('pdf-modal').classList.remove('hidden');
+        }
+
+        function closePdfModal() {
+            document.getElementById('pdf-modal').classList.add('hidden');
+            activeInvoiceForDoc = null;
+        }
+
+        function shareInvoiceWa() {
+            if (!activeInvoiceForDoc) return;
+            const inv = activeInvoiceForDoc;
+            const text = `*INVOICE TAGIHAN - POPLAB DJ SERVICES*%0A` +
+                `----------------------------------------%0A` +
+                `No. Invoice: ${inv.id}%0A` +
+                `Klien: ${inv.clientName}%0A` +
+                `Total Tagihan: *Rp${inv.grandTotal.toLocaleString('id-ID')}*%0A` +
+                `Status: ${inv.status}%0A` +
+                `Jatuh Tempo: ${inv.dueDate}%0A` +
+                `----------------------------------------%0A` +
+                `Pembayaran via Rekening Resmi:%0A` +
+                `*BCA 861-098-7654* a/n PopLab Creative%0A` +
+                `Harap konfirmasi bukti transfer jika sudah melakukan pembayaran.%0A` +
+                `_PopLab Play Learn Create Together_`;
+            const waUrl = `https://api.whatsapp.com/send?phone=${inv.clientPhone}&text=${text}`;
+            window.open(waUrl, '_blank');
+        }
+
+        function handleInvoiceSearch(val) {
+            const q = val.toLowerCase();
+            const filtered = invoicesData.filter(i => 
+                i.clientName.toLowerCase().includes(q) || 
+                i.id.toLowerCase().includes(q) ||
+                (i.eventNotes && i.eventNotes.toLowerCase().includes(q))
+            );
+            renderInvoicesList(filtered);
+        }
+
+        function filterInvoices(status, evt) {
+            document.querySelectorAll('.inv-filter-btn').forEach(btn => {
+                btn.classList.remove('bg-popblue', 'text-white');
+                btn.classList.add('bg-popsoft', 'text-neutral-600');
+            });
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('bg-popblue', 'text-white');
+                evt.currentTarget.classList.remove('bg-popsoft', 'text-neutral-600');
+            }
+
+            if (status === 'ALL') {
+                renderInvoicesList(invoicesData);
+            } else {
+                const filtered = invoicesData.filter(i => i.status.includes(status));
+                renderInvoicesList(filtered);
+            }
+        }
+
+        function fetchInvoicesFromGAS() {
+            fetch(`${APP_URL}?action=getInvoices`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success' && res.data) {
+                        invoicesData = res.data;
+                        localStorage.setItem('poplab_invoices', JSON.stringify(invoicesData));
+                        renderInvoicesList(invoicesData);
+                    }
+                })
+                .catch(() => console.log('Gagal fetch invoice online'));
         }
 
         /* PLACEHOLDER: JS BARU */
