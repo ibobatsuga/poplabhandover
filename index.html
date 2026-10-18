@@ -906,27 +906,36 @@
             renderCatalogChips();
             setDefaultInvoiceDates();
 
-            // Default item pertama untuk invoice jika belum ada
-            if (currentItems.length === 0) {
-                addItemToInvoice("Pioneer RX3 (24 Jam)", 1000000);
-            }
-
             // Muat Data Handover
             if (PREVIEW_MODE) {
                 recordsData = [...DUMMY_RECORDS];
+            } else {
+                fetchRecordsFromGAS();
             }
             renderRecordsList(recordsData);
 
             // Muat Data Invoices
-            const savedInv = localStorage.getItem('poplab_invoices');
-            if (savedInv) {
-                try {
-                    invoicesData = JSON.parse(savedInv);
-                } catch(e) {
-                    invoicesData = [...DUMMY_INVOICES];
+            if (PREVIEW_MODE) {
+                if (currentItems.length === 0) {
+                    addItemToInvoice("Pioneer RX3 (24 Jam)", 1000000);
                 }
-            } else {
                 invoicesData = [...DUMMY_INVOICES];
+            } else {
+                renderItemsTable();
+                const savedInv = localStorage.getItem('poplab_invoices');
+                if (savedInv) {
+                    try {
+                        const parsed = JSON.parse(savedInv);
+                        // Bersihkan data dummy preview lama
+                        invoicesData = parsed.filter(i => !i.id.startsWith('INV-PL-202610-00'));
+                        localStorage.setItem('poplab_invoices', JSON.stringify(invoicesData));
+                    } catch(e) {
+                        invoicesData = [];
+                    }
+                } else {
+                    invoicesData = [];
+                }
+                fetchInvoicesFromGAS();
             }
             renderInvoicesList(invoicesData);
         });
@@ -1709,6 +1718,12 @@
             // Langsung buka modal dokumen PDF
             openPdfModal(newInvoice.id);
 
+            // Reset form invoice untuk pembuatan tagihan berikutnya
+            document.getElementById('invoice-form').reset();
+            currentItems = [];
+            renderItemsTable();
+            setDefaultInvoiceDates();
+
             // Background Sync ke GAS
             if (!PREVIEW_MODE) {
                 fetch(APP_URL, {
@@ -1722,7 +1737,7 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status !== 'success') {
-                        showToast('⚠️ Gagal sync ke server Google Sheets');
+                        console.log('GAS sync note:', data.message || 'Action saveInvoice belum terdaftar di GAS');
                     }
                 })
                 .catch(() => console.log('Background invoice sync error (GAS action may not be registered yet)'));
@@ -1816,13 +1831,25 @@
             fetch(`${APP_URL}?action=getInvoices`)
                 .then(res => res.json())
                 .then(res => {
-                    if (res.status === 'success' && res.data) {
+                    if (res.status === 'success' && Array.isArray(res.data)) {
                         invoicesData = res.data;
                         localStorage.setItem('poplab_invoices', JSON.stringify(invoicesData));
                         renderInvoicesList(invoicesData);
                     }
                 })
                 .catch(() => console.log('Gagal fetch invoice online'));
+        }
+
+        function fetchRecordsFromGAS() {
+            fetch(`${APP_URL}?action=getRecords`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.status === 'success' && Array.isArray(res.data)) {
+                        recordsData = res.data;
+                        renderRecordsList(recordsData);
+                    }
+                })
+                .catch(() => console.log('Gagal fetch handover online'));
         }
 
         /* PLACEHOLDER: JS BARU */
