@@ -721,7 +721,8 @@
         /* ==========================================================
            KONFIGURASI UTAMA & STATE APLIKASI
            ========================================================== */
-        const APP_URL = "https://script.google.com/macros/s/AKfycbx_3OX8tTz57j4nhWLCwR7n2O_f9WvvarwIrigZPk6E7KUXfh-0qUmKLkzIQUdR3UKZLg/exec"; /* GANTI DENGAN WEB APP URL GAS */
+        const APP_URL = "https://script.google.com/macros/s/AKfycbx_3OX8tTz57j4nhWLCwR7n2O_f9WvvarwIrigZPk6E7KUXfh-0qUmKLkzIQUdR3UKZLg/exec"; /* URL GAS HANDOVER & LOGIN */
+        const INVOICE_APP_URL = "https://script.google.com/macros/s/AKfycbzj0Dqd33RpAAm8g9Z5YrdVgVGqFFyuuCX1_S_GlcmXVokjI4z2XUwBcbicn1sNs3FJ/exec"; /* URL GAS KHUSUS INVOICE */
         const PREVIEW_MODE = false;             /* UBAH JADI false KETIKA DEPLOY */
 
         let currentUser = null;
@@ -1724,9 +1725,9 @@
             renderItemsTable();
             setDefaultInvoiceDates();
 
-            // Background Sync ke GAS
+            // Background Sync ke GAS Khusus Invoice
             if (!PREVIEW_MODE) {
-                fetch(APP_URL, {
+                fetch(INVOICE_APP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: new URLSearchParams({
@@ -1737,10 +1738,12 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status !== 'success') {
-                        console.log('GAS sync note:', data.message || 'Action saveInvoice belum terdaftar di GAS');
+                        showToast('⚠️ Gagal sync ke server Google Sheets');
+                    } else {
+                        console.log('✅ Invoice tersimpan ke spreadsheet online');
                     }
                 })
-                .catch(() => console.log('Background invoice sync error (GAS action may not be registered yet)'));
+                .catch(() => console.log('Background invoice sync error'));
             }
         }
 
@@ -1828,7 +1831,7 @@
         }
 
         function fetchInvoicesFromGAS() {
-            fetch(`${APP_URL}?action=getInvoices`)
+            fetch(`${INVOICE_APP_URL}?action=getInvoices`)
                 .then(res => res.json())
                 .then(res => {
                     if (res.status === 'success' && Array.isArray(res.data)) {
