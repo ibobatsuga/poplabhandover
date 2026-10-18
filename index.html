@@ -126,7 +126,7 @@
                             Transaksi</span>
                         <div class="grid grid-cols-2 gap-2">
                             <label class="cursor-pointer">
-                                <input type="radio" name="trans_type" value="Keluar (Dipinjam)" checked
+                                <input type="radio" name="trans_type" value="Keluar (Dipinjam)" checked onchange="handleTransTypeChange()"
                                     class="peer hidden">
                                 <div
                                     class="p-3 text-center rounded-xl border border-popborder bg-popsoft peer-checked:bg-popblue peer-checked:text-white peer-checked:border-popblue transition text-xs font-bold">
@@ -134,7 +134,7 @@
                                 </div>
                             </label>
                             <label class="cursor-pointer">
-                                <input type="radio" name="trans_type" value="Masuk (Kembali)" class="peer hidden">
+                                <input type="radio" name="trans_type" value="Masuk (Kembali)" onchange="handleTransTypeChange()" class="peer hidden">
                                 <div
                                     class="p-3 text-center rounded-xl border border-popborder bg-popsoft peer-checked:bg-popblue peer-checked:text-white peer-checked:border-popblue transition text-xs font-bold">
                                     📥 Alat Kembali
@@ -175,10 +175,10 @@
                         </div>
                     </div>
 
-                    <!-- Card: Pilihan Unit DJ -->
+                    <!-- Card: Pilihan Unit DJ & Nomor Seri -->
                     <div class="p-4 rounded-2xl border border-popborder bg-white shadow-sm space-y-3">
                         <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">03 / Unit Utama
-                            DJ</span>
+                            DJ & Nomor Seri</span>
                         <div class="grid grid-cols-2 gap-2">
                             <label class="cursor-pointer">
                                 <input type="radio" name="dj_model" value="Pioneer RX3" checked class="peer hidden">
@@ -197,13 +197,24 @@
                                 </div>
                             </label>
                         </div>
+                        <div>
+                            <label class="block text-xs font-bold text-neutral-600 mb-1">Nomor Seri / ID Unit PopLab *</label>
+                            <input type="text" id="unit-serial" required placeholder="Contoh: PL-RX3-01 atau No Seri Pioneer"
+                                class="w-full px-3.5 py-2.5 rounded-xl border border-popborder bg-popsoft text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-popblue">
+                        </div>
                     </div>
 
-                    <!-- Card: Perlengkapan Pendukung -->
+                    <!-- Card: Perlengkapan Pendukung & Tracking Qty -->
                     <div class="p-4 rounded-2xl border border-popborder bg-white shadow-sm space-y-3">
-                        <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">04 / Perlengkapan
-                            Pendukung</span>
-                        <div id="acc-checklist-container" class="grid grid-cols-2 gap-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs font-extrabold uppercase tracking-wider text-popblue">04 / Perlengkapan
+                                Pendukung</span>
+                            <span id="acc-qty-label" class="text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                                Qty Keluar
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-neutral-500">Centang perlengkapan yang disertakan dan sesuaikan jumlah (Qty).</p>
+                        <div id="acc-checklist-container" class="space-y-2">
                             <!-- Rendered via JS -->
                         </div>
                     </div>
@@ -451,7 +462,8 @@
                 venue: "Hyatt Regency Jogja",
                 duration: "24 Jam",
                 djModel: "Pioneer RX3",
-                accessories: ["Hard Case Unit", "Kabel Power AC", "Kabel XLR Audio (Pair)", "DJ Headphone Pro"],
+                unitSerial: "PL-RX3-01",
+                accessories: ["Hard Case Unit (1x)", "Kabel Power AC (1x)", "Kabel XLR Audio (Pair) (2x)", "DJ Headphone Pro (1x)"],
                 conditions: {
                     "Jogwheel L & R (Smooth & Sensor)": "Normal",
                     "Tempo & Pitch Fader": "Normal",
@@ -476,7 +488,8 @@
                 venue: "Villa Kaliurang",
                 duration: "12 Jam",
                 djModel: "Pioneer RX1",
-                accessories: ["Hard Case Unit", "Kabel Power AC", "Kabel RCA to 3.5mm"],
+                unitSerial: "PL-RX1-02",
+                accessories: ["Hard Case Unit (1x)", "Kabel Power AC (1x)", "Kabel RCA to 3.5mm (1x)"],
                 conditions: {
                     "Jogwheel L & R (Smooth & Sensor)": "Normal",
                     "Tempo & Pitch Fader": "Normal",
@@ -528,15 +541,56 @@
         /* ==========================================================
            UI RENDERING TEMPLATES
            ========================================================== */
+        function handleTransTypeChange() {
+            const checked = document.querySelector('input[name="trans_type"]:checked');
+            const isKeluar = !checked || checked.value.includes('Keluar');
+            const label = document.getElementById('acc-qty-label');
+            if (label) {
+                label.textContent = isKeluar ? 'Qty Keluar' : 'Qty Kembali';
+                label.className = isKeluar 
+                    ? 'text-[11px] font-bold text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200'
+                    : 'text-[11px] font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200';
+            }
+        }
+
+        function toggleQtyInput(idx) {
+            const chk = document.getElementById(`acc_chk_${idx}`);
+            const qtyInp = document.getElementById(`acc_qty_${idx}`);
+            const row = document.getElementById(`acc_row_${idx}`);
+            if (chk && qtyInp) {
+                qtyInp.disabled = !chk.checked;
+                if (chk.checked) {
+                    qtyInp.classList.remove('opacity-40', 'bg-neutral-100');
+                    row.classList.remove('opacity-50');
+                } else {
+                    qtyInp.classList.add('opacity-40', 'bg-neutral-100');
+                    row.classList.add('opacity-50');
+                }
+            }
+        }
+
         function renderFormComponents() {
-            // Accessories Checkboxes
+            handleTransTypeChange();
+
+            // Accessories Checkboxes with Quantity
             const accContainer = document.getElementById('acc-checklist-container');
-            accContainer.innerHTML = ACCESSORIES_LIST.map((item, idx) => `
-        <label class="flex items-center gap-2 p-2.5 rounded-xl border border-popborder bg-popsoft/70 hover:bg-popsoft cursor-pointer text-xs font-semibold">
-          <input type="checkbox" name="accessories" value="${item}" checked class="rounded text-popblue focus:ring-0">
-          <span class="truncate">${item}</span>
-        </label>
-      `).join('');
+            accContainer.innerHTML = ACCESSORIES_LIST.map((item, idx) => {
+                const defaultQty = item.includes('Speaker') ? 2 : 1;
+                return `
+                <div id="acc_row_${idx}" class="flex items-center justify-between p-2.5 rounded-xl border border-popborder bg-popsoft/60 hover:bg-popsoft transition">
+                    <label class="flex items-center gap-2.5 cursor-pointer flex-1 min-w-0 pr-2">
+                        <input type="checkbox" id="acc_chk_${idx}" name="accessories" value="${item}" checked 
+                            class="rounded text-popblue focus:ring-0 w-4 h-4 cursor-pointer" onchange="toggleQtyInput(${idx})">
+                        <span class="text-xs font-semibold text-neutral-800 truncate">${item}</span>
+                    </label>
+                    <div class="flex items-center gap-1.5 flex-none">
+                        <span class="text-[10px] uppercase font-bold text-neutral-400">Qty</span>
+                        <input type="number" id="acc_qty_${idx}" name="acc_qty_${idx}" value="${defaultQty}" min="1" max="99" 
+                            class="w-14 px-2 py-1 text-center font-bold text-xs rounded-lg border border-popborder bg-white focus:outline-none focus:ring-1 focus:ring-popblue">
+                    </div>
+                </div>
+                `;
+            }).join('');
 
             // Hardware Inspection Radios
             const hwContainer = document.getElementById('hardware-inspect-container');
@@ -579,9 +633,9 @@
               <span class="text-[11px] font-medium text-neutral-400">${item.date}</span>
             </div>
             <h4 class="text-sm font-extrabold text-popdark">${item.custName}</h4>
-            <div class="flex items-center gap-3 mt-1.5 text-xs text-neutral-500">
+            <div class="flex items-center gap-2 mt-1.5 text-xs text-neutral-500 flex-wrap">
               <span class="font-bold text-popblue flex items-center gap-1">
-                <i class="ph ph-disc"></i> ${item.djModel}
+                <i class="ph ph-disc"></i> ${item.djModel} ${item.unitSerial ? `<span class="text-[10px] font-mono text-neutral-500 font-normal">(${item.unitSerial})</span>` : ''}
               </span>
               <span>•</span>
               <span class="truncate flex items-center gap-1">
@@ -810,13 +864,22 @@
 
             const transType = document.querySelector('input[name="trans_type"]:checked').value;
             const djModel = document.querySelector('input[name="dj_model"]:checked').value;
+            const unitSerial = document.getElementById('unit-serial').value.trim();
             const custName = document.getElementById('cust-name').value.trim();
             const custPhone = document.getElementById('cust-phone').value.trim();
             const venue = document.getElementById('cust-venue').value.trim();
             const duration = document.getElementById('event-duration').value.trim();
             const notes = document.getElementById('handover-notes').value.trim();
 
-            const accessories = Array.from(document.querySelectorAll('input[name="accessories"]:checked')).map(el => el.value);
+            const accessories = [];
+            ACCESSORIES_LIST.forEach((item, idx) => {
+                const chk = document.getElementById(`acc_chk_${idx}`);
+                if (chk && chk.checked) {
+                    const qtyInp = document.getElementById(`acc_qty_${idx}`);
+                    const qty = qtyInp ? (parseInt(qtyInp.value) || 1) : 1;
+                    accessories.push(`${item} (${qty}x)`);
+                }
+            });
 
             const conditions = {};
             HARDWARE_CHECKS.forEach((chk, idx) => {
@@ -837,6 +900,7 @@
                 venue,
                 duration,
                 djModel,
+                unitSerial,
                 accessories,
                 conditions,
                 notes,
@@ -913,9 +977,21 @@
         </div>
 
         <div class="space-y-1">
-          <p class="text-neutral-400 text-[10px] uppercase font-bold tracking-wider">Unit & Aksesoris</p>
-          <p class="font-bold text-popblue">${record.djModel}</p>
-          <p class="text-neutral-600 text-[11px]">${(record.accessories || []).join(', ') || '-'}</p>
+          <p class="text-neutral-400 text-[10px] uppercase font-bold tracking-wider">Unit & Nomor Seri</p>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="font-bold text-popblue">${record.djModel}</span>
+            ${record.unitSerial ? `<span class="text-[11px] font-mono bg-blue-50 text-popblue px-2 py-0.5 rounded-md border border-blue-200 font-bold">SN: ${record.unitSerial}</span>` : ''}
+          </div>
+        </div>
+
+        <div class="space-y-1">
+          <div class="flex items-center justify-between">
+            <p class="text-neutral-400 text-[10px] uppercase font-bold tracking-wider">Aksesoris & Jumlah</p>
+            <span class="text-[10px] font-bold text-neutral-500">${record.type.includes('Keluar') ? 'Qty Keluar' : 'Qty Kembali'}</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 pt-0.5">
+            ${(record.accessories || []).map(acc => `<span class="text-[11px] bg-popsoft border border-popborder px-2.5 py-1 rounded-lg text-neutral-700 font-semibold">${acc}</span>`).join('') || '<span class="text-neutral-400 text-xs">-</span>'}
+          </div>
         </div>
 
         <div class="space-y-1">
@@ -948,12 +1024,16 @@
         function shareRecordViaWa() {
             if (!activeDetailRecord) return;
             const r = activeDetailRecord;
+            const accessoriesText = (r.accessories && r.accessories.length > 0)
+                ? r.accessories.map(a => `%20%20• ${a}`).join('%0A')
+                : '%20%20-%20';
             const text = `*POPLAB DJ EQUIPMENT - BUKTI SERAH TERIMA*%0A` +
                 `----------------------------------------%0A` +
                 `No BAST: ${r.id}%0A` +
                 `Status: ${r.type}%0A` +
                 `Klien: ${r.custName}%0A` +
-                `Unit: ${r.djModel}%0A` +
+                `Unit: ${r.djModel}${r.unitSerial ? ` (SN: ${r.unitSerial})` : ''}%0A` +
+                `Kelengkapan & Qty:%0A${accessoriesText}%0A` +
                 `Venue: ${r.venue || '-'}%0A` +
                 `Tanggal: ${r.date}%0A` +
                 `----------------------------------------%0A` +
@@ -970,6 +1050,7 @@
             const filtered = recordsData.filter(r =>
                 r.custName.toLowerCase().includes(q) ||
                 r.djModel.toLowerCase().includes(q) ||
+                (r.unitSerial && r.unitSerial.toLowerCase().includes(q)) ||
                 r.id.toLowerCase().includes(q)
             );
             renderRecordsList(filtered);
